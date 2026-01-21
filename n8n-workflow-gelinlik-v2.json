@@ -1,0 +1,280 @@
+{
+    "name": "Gelinlik AI Görsel Üretici v2",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "gelinlik",
+                "responseMode": "responseNode",
+                "options": {
+                    "rawBody": false
+                }
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                300
+            ],
+            "webhookId": "gelinlik-webhook"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Gelen verileri parse et\nconst input = $input.first().json;\n\n// Base64 görsellerini ayır\nconst dressImage = input.dress_image;\nconst modelImage = input.model_image;\nconst backgroundImage = input.background_image || null;\nconst requestId = input.request_id;\n\n// Base64 header'ını temizle (eğer varsa)\nfunction cleanBase64(base64String) {\n  if (!base64String) return null;\n  if (base64String.includes(',')) {\n    return base64String.split(',')[1];\n  }\n  return base64String;\n}\n\nreturn {\n  json: {\n    request_id: requestId,\n    dress_base64: cleanBase64(dressImage),\n    model_base64: cleanBase64(modelImage),\n    background_base64: cleanBase64(backgroundImage),\n    has_background: !!backgroundImage,\n    timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "parse-images",
+            "name": "Parse Images",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                460,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Prompt oluştur ve API body hazırla\nconst data = $input.first().json;\n\nconst frontPrompt = `Transfer the wedding dress from the mannequin in the attached image to the live model in the attachment without changing anything. Ultra photorealistic, ultra detailed. Full-body shot from the front. Background: ${data.has_background ? 'Use the provided background image' : 'The infinite studio background behind the live model.'}`;\n\nconst backPrompt = `Transfer the wedding dress from the mannequin in the attached image to the live model in the attachment without changing anything. Ultra photorealistic, ultra detailed. Full-body shot from behind. Background: ${data.has_background ? 'Use the provided background image' : 'The infinite studio background behind the live model.'}`;\n\n// Front API body\nconst frontBody = {\n  version: \"black-forest-labs/flux-1.1-pro\",\n  input: {\n    prompt: frontPrompt,\n    image: `data:image/jpeg;base64,${data.dress_base64}`,\n    image2: `data:image/jpeg;base64,${data.model_base64}`,\n    guidance_scale: 7.5,\n    num_inference_steps: 50,\n    output_format: \"png\"\n  }\n};\n\n// Back API body\nconst backBody = {\n  version: \"black-forest-labs/flux-1.1-pro\",\n  input: {\n    prompt: backPrompt,\n    image: `data:image/jpeg;base64,${data.dress_base64}`,\n    image2: `data:image/jpeg;base64,${data.model_base64}`,\n    guidance_scale: 7.5,\n    num_inference_steps: 50,\n    output_format: \"png\"\n  }\n};\n\nreturn {\n  json: {\n    ...data,\n    front_prompt: frontPrompt,\n    back_prompt: backPrompt,\n    front_body: JSON.stringify(frontBody),\n    back_body: JSON.stringify(backBody)\n  }\n};"
+            },
+            "id": "generate-prompts",
+            "name": "Generate Prompts",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                680,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.replicate.com/v1/predictions",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "string",
+                "body": "={{ $json.front_body }}",
+                "options": {}
+            },
+            "id": "api-front-image",
+            "name": "API - Front Image",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                900,
+                200
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "replicate-auth",
+                    "name": "Replicate API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.replicate.com/v1/predictions",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "string",
+                "body": "={{ $json.back_body }}",
+                "options": {}
+            },
+            "id": "api-back-image",
+            "name": "API - Back Image",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                900,
+                400
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "replicate-auth",
+                    "name": "Replicate API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "combineBy": "combineAll",
+                "options": {}
+            },
+            "id": "merge-results",
+            "name": "Merge Results",
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3,
+            "position": [
+                1120,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Sonuçları birleştir\nconst items = $input.all();\n\n// İlk item front, ikinci item back olmalı\nconst frontResult = items[0]?.json;\nconst backResult = items[1]?.json;\n\nreturn {\n  json: {\n    image_1: frontResult?.output || frontResult?.urls?.get || null,\n    image_2: backResult?.output || backResult?.urls?.get || null,\n    status: 'completed',\n    timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "format-response",
+            "name": "Format Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1340,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json }}",
+                "options": {
+                    "responseHeaders": {
+                        "entries": [
+                            {
+                                "name": "Access-Control-Allow-Origin",
+                                "value": "*"
+                            },
+                            {
+                                "name": "Access-Control-Allow-Methods",
+                                "value": "POST, OPTIONS"
+                            },
+                            {
+                                "name": "Access-Control-Allow-Headers",
+                                "value": "Content-Type"
+                            }
+                        ]
+                    }
+                }
+            },
+            "id": "respond-webhook",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1560,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Images",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Images": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Prompts",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Prompts": {
+            "main": [
+                [
+                    {
+                        "node": "API - Front Image",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "API - Back Image",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "API - Front Image": {
+            "main": [
+                [
+                    {
+                        "node": "Merge Results",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "API - Back Image": {
+            "main": [
+                [
+                    {
+                        "node": "Merge Results",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Merge Results": {
+            "main": [
+                [
+                    {
+                        "node": "Format Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Response": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "wedding",
+            "id": "1"
+        },
+        {
+            "name": "ai-image",
+            "id": "2"
+        }
+    ],
+    "triggerCount": 1,
+    "pinData": {}
+}

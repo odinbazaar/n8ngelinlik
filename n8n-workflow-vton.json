@@ -1,0 +1,430 @@
+{
+  "name": "Gelinlik AI - Virtual Try-On",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gelinlik",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "gelinlik-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gelen verileri parse et\nconst input = $input.first().json;\n\n// Base64 header'ını temizle\nfunction cleanBase64(base64String) {\n  if (!base64String) return null;\n  // Zaten data:image formatında ise olduğu gibi döndür\n  if (base64String.startsWith('data:image')) {\n    return base64String;\n  }\n  // Değilse ekle\n  return 'data:image/jpeg;base64,' + base64String;\n}\n\nreturn {\n  json: {\n    request_id: input.request_id || 'req_' + Date.now(),\n    dress_image: cleanBase64(input.dress_image),\n    model_image: cleanBase64(input.model_image),\n    background_image: input.background_image ? cleanBase64(input.background_image) : null,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "parse-images",
+      "name": "Parse Images",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"version\": \"c871bb9b046607b680449ecbae55fd8c6d945e0a1948644bf2361b3d021d3ff4\",\n  \"input\": {\n    \"human_img\": \"{{ $json.model_image }}\",\n    \"garm_img\": \"{{ $json.dress_image }}\",\n    \"garment_des\": \"elegant white wedding dress, bridal gown, lace details, long train\",\n    \"category\": \"upper_body\",\n    \"crop\": false,\n    \"seed\": 42,\n    \"steps\": 30,\n    \"force_dc\": false,\n    \"mask_only\": false\n  }\n}",
+        "options": {}
+      },
+      "id": "api-vton-front",
+      "name": "API - VTON Front",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "replicate-auth",
+          "name": "Replicate API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"version\": \"c871bb9b046607b680449ecbae55fd8c6d945e0a1948644bf2361b3d021d3ff4\",\n  \"input\": {\n    \"human_img\": \"{{ $json.model_image }}\",\n    \"garm_img\": \"{{ $json.dress_image }}\",\n    \"garment_des\": \"elegant white wedding dress, bridal gown, lace details, long train, back view\",\n    \"category\": \"upper_body\",\n    \"crop\": false,\n    \"seed\": 123,\n    \"steps\": 30,\n    \"force_dc\": false,\n    \"mask_only\": false\n  }\n}",
+        "options": {}
+      },
+      "id": "api-vton-back",
+      "name": "API - VTON Back",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "replicate-auth",
+          "name": "Replicate API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Replicate async prediction - sonucu bekle\nconst prediction = $input.first().json;\nconst predictionUrl = prediction.urls?.get || prediction.url;\n\nif (!predictionUrl) {\n  throw new Error('Prediction URL bulunamadı');\n}\n\n// Prediction ID'yi sakla\nreturn {\n  json: {\n    prediction_id: prediction.id,\n    prediction_url: predictionUrl,\n    status: prediction.status\n  }\n};"
+      },
+      "id": "get-prediction-url-front",
+      "name": "Get Prediction URL Front",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Replicate async prediction - sonucu bekle\nconst prediction = $input.first().json;\nconst predictionUrl = prediction.urls?.get || prediction.url;\n\nif (!predictionUrl) {\n  throw new Error('Prediction URL bulunamadı');\n}\n\n// Prediction ID'yi sakla\nreturn {\n  json: {\n    prediction_id: prediction.id,\n    prediction_url: predictionUrl,\n    status: prediction.status\n  }\n};"
+      },
+      "id": "get-prediction-url-back",
+      "name": "Get Prediction URL Back",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      },
+      "id": "wait-front",
+      "name": "Wait Front",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      },
+      "id": "wait-back",
+      "name": "Wait Back",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1100, 400]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.prediction_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "poll-result-front",
+      "name": "Poll Result Front",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "replicate-auth",
+          "name": "Replicate API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.prediction_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "poll-result-back",
+      "name": "Poll Result Back",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "replicate-auth",
+          "name": "Replicate API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-succeeded",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-status-front",
+      "name": "Check Status Front",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1500, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-succeeded",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-status-back",
+      "name": "Check Status Back",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1500, 400]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "merge-results",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1720, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sonuçları birleştir\nconst items = $input.all();\n\nlet image1 = null;\nlet image2 = null;\n\nfor (const item of items) {\n  const output = item.json.output;\n  if (output) {\n    if (!image1) {\n      image1 = Array.isArray(output) ? output[0] : output;\n    } else {\n      image2 = Array.isArray(output) ? output[0] : output;\n    }\n  }\n}\n\nreturn {\n  json: {\n    success: true,\n    image_1: image1,\n    image_2: image2 || image1,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1940, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2160, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Images": {
+      "main": [
+        [
+          {
+            "node": "API - VTON Front",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "API - VTON Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API - VTON Front": {
+      "main": [
+        [
+          {
+            "node": "Get Prediction URL Front",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API - VTON Back": {
+      "main": [
+        [
+          {
+            "node": "Get Prediction URL Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Prediction URL Front": {
+      "main": [
+        [
+          {
+            "node": "Wait Front",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Prediction URL Back": {
+      "main": [
+        [
+          {
+            "node": "Wait Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Front": {
+      "main": [
+        [
+          {
+            "node": "Poll Result Front",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Back": {
+      "main": [
+        [
+          {
+            "node": "Poll Result Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Result Front": {
+      "main": [
+        [
+          {
+            "node": "Check Status Front",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Result Back": {
+      "main": [
+        [
+          {
+            "node": "Check Status Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status Front": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status Back": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

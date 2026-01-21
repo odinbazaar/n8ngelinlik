@@ -1,0 +1,156 @@
+{
+    "name": "Gelinlik AI - Basit Versiyon",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "gelinlik",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                300
+            ],
+            "webhookId": "gelinlik"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Gelen verileri al\nconst input = $input.first().json;\n\n// Base64 temizle\nfunction cleanBase64(b64) {\n  if (!b64) return null;\n  return b64.includes(',') ? b64.split(',')[1] : b64;\n}\n\nconst dress = cleanBase64(input.dress_image);\nconst model = cleanBase64(input.model_image);\nconst hasBg = !!input.background_image;\n\nconst prompt = `Transfer the wedding dress from the mannequin to the live model. Ultra photorealistic, ultra detailed. Full-body shot. ${hasBg ? 'Use provided background.' : 'Infinite studio background.'}`;\n\nreturn {\n  json: {\n    prompt: prompt,\n    dress_b64: dress,\n    model_b64: model\n  }\n};"
+            },
+            "id": "prepare",
+            "name": "Prepare Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                460,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"input\": {\n    \"prompt\": \"{{ $json.prompt }}\",\n    \"num_outputs\": 2,\n    \"output_format\": \"png\"\n  }\n}",
+                "options": {}
+            },
+            "id": "replicate-api",
+            "name": "Replicate API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                680,
+                300
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "1",
+                    "name": "Replicate Auth"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const result = $input.first().json;\n\n// Replicate sonucunu kontrol et\nif (result.output && Array.isArray(result.output)) {\n  return {\n    json: {\n      image_1: result.output[0] || null,\n      image_2: result.output[1] || null,\n      status: 'completed'\n    }\n  };\n}\n\n// Eğer async ise, prediction bilgilerini döndür\nreturn {\n  json: {\n    prediction_id: result.id,\n    status: result.status,\n    get_url: result.urls?.get,\n    message: 'Processing - poll get_url for results'\n  }\n};"
+            },
+            "id": "format",
+            "name": "Format Result",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                900,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json }}",
+                "options": {
+                    "responseHeaders": {
+                        "entries": [
+                            {
+                                "name": "Access-Control-Allow-Origin",
+                                "value": "*"
+                            }
+                        ]
+                    }
+                }
+            },
+            "id": "respond",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1120,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Data": {
+            "main": [
+                [
+                    {
+                        "node": "Replicate API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Replicate API": {
+            "main": [
+                [
+                    {
+                        "node": "Format Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Result": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

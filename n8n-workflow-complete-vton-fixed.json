@@ -1,0 +1,529 @@
+{
+    "name": "Gelinlik AI - Complete VTON Fixed",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "gelinlik",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const rawInput = $input.first().json;\nconst input = rawInput.body || rawInput;\n\nfunction cleanBase64(base64String) {\n  if (!base64String) return null;\n  if (base64String.includes(',')) {\n    return base64String.split(',')[1];\n  }\n  return base64String;\n}\n\nconst dressB64 = cleanBase64(input.dress_image);\nconst modelB64 = cleanBase64(input.model_image);\n\nif (!dressB64) {\n  throw new Error('Dress image is required. Input keys: ' + Object.keys(input).join(', '));\n}\nif (!modelB64) {\n  throw new Error('Model image is required but was empty or invalid');\n}\n\nreturn {\n  json: {\n    request_id: input.request_id || 'req_' + Date.now(),\n    dress_base64: dressB64,\n    model_base64: modelB64,\n    timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "parse-input",
+            "name": "Parse Input",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                460,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.imgbb.com/1/upload?key=a2aef6faede31afd94e62d43222d2b2b",
+                "sendBody": true,
+                "contentType": "form-urlencoded",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "image",
+                            "value": "={{ $json.dress_base64 }}"
+                        },
+                        {
+                            "name": "name",
+                            "value": "dress_{{ $json.request_id }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "upload-dress",
+            "name": "Upload Dress to imgbb",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                680,
+                240
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.imgbb.com/1/upload?key=a2aef6faede31afd94e62d43222d2b2b",
+                "sendBody": true,
+                "contentType": "form-urlencoded",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "image",
+                            "value": "={{ $json.model_base64 }}"
+                        },
+                        {
+                            "name": "name",
+                            "value": "model_{{ $json.request_id }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "upload-model",
+            "name": "Upload Model to imgbb",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                680,
+                440
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const result = $input.first().json;\nif (!result.data || !result.data.url) {\n  throw new Error('Dress upload failed: ' + JSON.stringify(result));\n}\nreturn { json: { dress_url: result.data.url } };"
+            },
+            "id": "get-dress-url",
+            "name": "Get Dress URL",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                900,
+                240
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const result = $input.first().json;\nif (!result.data || !result.data.url) {\n  throw new Error('Model upload failed: ' + JSON.stringify(result));\n}\nreturn { json: { model_url: result.data.url } };"
+            },
+            "id": "get-model-url",
+            "name": "Get Model URL",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                900,
+                440
+            ]
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "combineBy": "combineAll",
+                "options": {}
+            },
+            "id": "merge-urls",
+            "name": "Merge URLs",
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3,
+            "position": [
+                1120,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all();\nlet dressUrl = '';\nlet modelUrl = '';\nfor (const item of items) {\n  if (item.json.dress_url) dressUrl = item.json.dress_url;\n  if (item.json.model_url) modelUrl = item.json.model_url;\n}\nif (!dressUrl || !modelUrl) {\n  throw new Error('Missing URLs - dress: ' + dressUrl + ', model: ' + modelUrl);\n}\n\nconst replicateBody = JSON.stringify({\n  version: '0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985',\n  input: {\n    human_img: modelUrl,\n    garm_img: dressUrl,\n    garment_des: 'elegant white wedding dress, bridal gown'\n  }\n});\n\nreturn { json: { dress_url: dressUrl, model_url: modelUrl, replicate_body: replicateBody } };"
+            },
+            "id": "combine-urls",
+            "name": "Combine URLs",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1340,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.replicate.com/v1/predictions",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "raw",
+                "rawContentType": "application/json",
+                "body": "={{ $json.replicate_body }}",
+                "options": {}
+            },
+            "id": "replicate-tryon",
+            "name": "Replicate Try-On",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1560,
+                340
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "replicate-auth",
+                    "name": "Replicate API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const result = $input.first().json;\nreturn {\n  json: {\n    prediction_id: result.id,\n    prediction_url: result.urls?.get || `https://api.replicate.com/v1/predictions/${result.id}`,\n    status: result.status\n  }\n};"
+            },
+            "id": "get-prediction-info",
+            "name": "Get Prediction Info",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1780,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "amount": 30,
+                "unit": "seconds"
+            },
+            "id": "wait-for-result",
+            "name": "Wait 30s",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1.1,
+            "position": [
+                2000,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "={{ $json.prediction_url }}",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "options": {}
+            },
+            "id": "poll-result",
+            "name": "Poll Result",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2220,
+                340
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "replicate-auth",
+                    "name": "Replicate API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "succeeded",
+                            "leftValue": "={{ $json.status }}",
+                            "rightValue": "succeeded",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "check-status",
+            "name": "Check Status",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                2440,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const result = $input.first().json;\nreturn {\n  json: {\n    prediction_id: result.id,\n    prediction_url: `https://api.replicate.com/v1/predictions/${result.id}`,\n    status: result.status\n  }\n};"
+            },
+            "id": "not-ready",
+            "name": "Not Ready Yet",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2660,
+                480
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const result = $input.first().json;\nlet outputUrl = result.output;\nif (Array.isArray(outputUrl)) outputUrl = outputUrl[0];\nreturn {\n  json: {\n    success: true,\n    image_1: outputUrl,\n    image_2: outputUrl,\n    status: 'completed',\n    timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "format-success",
+            "name": "Format Success",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                2660,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json }}",
+                "options": {
+                    "responseHeaders": {
+                        "entries": [
+                            {
+                                "name": "Access-Control-Allow-Origin",
+                                "value": "*"
+                            },
+                            {
+                                "name": "Access-Control-Allow-Methods",
+                                "value": "POST, OPTIONS"
+                            },
+                            {
+                                "name": "Access-Control-Allow-Headers",
+                                "value": "Content-Type"
+                            }
+                        ]
+                    }
+                }
+            },
+            "id": "respond-success",
+            "name": "Respond Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                2880,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "amount": 10,
+                "unit": "seconds"
+            },
+            "id": "wait-retry",
+            "name": "Wait Retry",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1.1,
+            "position": [
+                2660,
+                620
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Input",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Input": {
+            "main": [
+                [
+                    {
+                        "node": "Upload Dress to imgbb",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Upload Model to imgbb",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upload Dress to imgbb": {
+            "main": [
+                [
+                    {
+                        "node": "Get Dress URL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upload Model to imgbb": {
+            "main": [
+                [
+                    {
+                        "node": "Get Model URL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Dress URL": {
+            "main": [
+                [
+                    {
+                        "node": "Merge URLs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Model URL": {
+            "main": [
+                [
+                    {
+                        "node": "Merge URLs",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Merge URLs": {
+            "main": [
+                [
+                    {
+                        "node": "Combine URLs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Combine URLs": {
+            "main": [
+                [
+                    {
+                        "node": "Replicate Try-On",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Replicate Try-On": {
+            "main": [
+                [
+                    {
+                        "node": "Get Prediction Info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Prediction Info": {
+            "main": [
+                [
+                    {
+                        "node": "Wait 30s",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wait 30s": {
+            "main": [
+                [
+                    {
+                        "node": "Poll Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Poll Result": {
+            "main": [
+                [
+                    {
+                        "node": "Check Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Status": {
+            "main": [
+                [
+                    {
+                        "node": "Format Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Not Ready Yet",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Success": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Not Ready Yet": {
+            "main": [
+                [
+                    {
+                        "node": "Wait Retry",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wait Retry": {
+            "main": [
+                [
+                    {
+                        "node": "Poll Result",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bridal AI Studio - Gelinlik Sanal Deneme</title>
+    <meta name="description" content="Yapay zeka ile gelinlik sanal deneme - Ön boy, arka boy ve yakın plan görünümler">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --gold: #C9A962;
+            --gold-light: #E8D5A3;
+            --gold-dark: #A68945;
+            --cream: #FBF9F4;
+            --charcoal: #2C2C2C;
+            --soft-gray: #8A8A8A;
+            --white: #FFFFFF;
+            --shadow: rgba(201, 169, 98, 0.15);
+            --glass: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(201, 169, 98, 0.25);
+            --gradient-gold: linear-gradient(135deg, #C9A962 0%, #E8D5A3 50%, #C9A962 100%);
+            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--cream);
+            color: var(--charcoal);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(201, 169, 98, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 90% 80%, rgba(201, 169, 98, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 50% 50%, rgba(201, 169, 98, 0.03) 0%, transparent 50%);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 3rem;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--charcoal);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--gold);
+            box-shadow: 0 4px 15px rgba(201, 169, 98, 0.3);
+        }
+
+        .logo-text {
+            font-size: 1.8rem;
+            letter-spacing: 3px;
+            font-weight: 300;
+        }
+
+        .logo-text span {
+            font-weight: 600;
+            color: var(--gold);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 30px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #4CAF50;
+            border-radius: 50%;
+            box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+
+        .status-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #4CAF50;
+        }
+
+        .settings-btn {
+            background: transparent;
+            border: none;
+            color: var(--soft-gray);
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 10px;
+            border-radius: 50%;
+        }
+
+        .settings-btn:hover {
+            color: var(--gold);
+            background: rgba(201, 169, 98, 0.1);
+            transform: rotate(90deg);
+        }
+
+        /* Main */
+        main {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 120px 2rem 4rem;
+        }
+
+        .hero-section {
+            text-align: center;
+            margin-bottom: 4rem;
+            padding: 2rem 0;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--charcoal) 0%, var(--gold-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            color: var(--soft-gray);
+            font-size: 1.1rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 300;
+        }
+
+        /* Section Cards */
+        .sections-container {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+
+        .section-card {
+            background: var(--white);
+            border-radius: 32px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 80px var(--shadow);
+            border: 1px solid transparent;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-gold);
+        }
+
+        .section-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold-light);
+            box-shadow: 0 35px 100px var(--shadow);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(201, 169, 98, 0.15);
+        }
+
+        .section-number {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-gold);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.4rem;
+            box-shadow: 0 8px 25px rgba(201, 169, 98, 0.4);
+            flex-shrink: 0;
+        }
+
+        .section-info h3 {
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: var(--charcoal);
+            margin-bottom: 0.3rem;
+        }
+
+        .section-info p {
+            font-size: 0.85rem;
+            color: var(--soft-gray);
+            letter-spacing: 1px;
+        }
+
+        .upload-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .upload-box {
+            background: rgba(251, 249, 244, 0.7);
+            border-radius: 20px;
+            padding: 1.5rem;
+        }
+
+        .upload-label {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--charcoal);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .upload-label i {
+            color: var(--gold);
+        }
+
+        .drop-zone {
+            aspect-ratio: 3/4;
+            border: 2px dashed #E0D8C8;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--white);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--gold);
+            background: rgba(201, 169, 98, 0.05);
+        }
+
+        .drop-zone.dragover {
+            border-color: var(--gold);
+            background: rgba(201, 169, 98, 0.1);
+            transform: scale(1.02);
+        }
+
+        .drop-zone.has-image {
+            border-style: solid;
+            border-color: var(--gold-light);
+        }
+
+        .drop-icon {
+            width: 48px;
+            height: 48px;
+            color: var(--gold);
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .drop-text {
+            font-size: 0.9rem;
+            color: var(--soft-gray);
+            text-align: center;
+            padding: 0 1rem;
+        }
+
+        .preview-image {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 36px;
+            height: 36px;
+            background: rgba(44, 44, 44, 0.8);
+            backdrop-filter: blur(5px);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            z-index: 10;
+        }
+
+        .remove-btn:hover {
+            background: #E74C3C;
+            transform: scale(1.1);
+        }
+
+        .drop-zone.has-image .drop-icon,
+        .drop-zone.has-image .drop-text {
+            display: none;
+        }
+
+        .drop-zone.has-image .preview-image,
+        .drop-zone.has-image .remove-btn {
+            display: flex;
+        }
+
+        /* Generate Button */
+        .generate-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem 0;
+        }
+
+        .generate-btn {
+            background: var(--charcoal);
+            color: var(--gold);
+            border: 2px solid var(--gold);
+            padding: 1.2rem 3rem;
+            border-radius: 60px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            background: var(--gold);
+            color: var(--charcoal);
+            transform: scale(1.05);
+            box-shadow: 0 15px 45px rgba(201, 169, 98, 0.4);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+        }
+
+        /* Result Container */
+        .result-container {
+            display: none;
+            margin-top: 1.5rem;
+            background: rgba(201, 169, 98, 0.08);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(201, 169, 98, 0.2);
+        }
+
+        .result-container.visible {
+            display: block;
+        }
+
+        .result-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gold-dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-image-wrapper {
+            position: relative;
+            aspect-ratio: 3/4;
+            border-radius: 16px;
+            overflow: hidden;
+            background: var(--white);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .download-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: var(--gold);
+            color: var(--charcoal);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .download-btn:hover {
+            background: var(--charcoal);
+            color: var(--gold);
+            transform: translateY(-3px);
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(251, 249, 244, 0.97);
+            backdrop-filter: blur(10px);
+            z-index: 3000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 4px solid var(--gold-light);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            color: var(--charcoal);
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-subtext {
+            color: var(--soft-gray);
+            font-size: 0.95rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--white);
+            width: 90%;
+            max-width: 480px;
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.25);
+            transform: scale(0.9);
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--soft-gray);
+            margin-bottom: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            background: #F8F6F2;
+            border: 1px solid var(--gold-light);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 4px rgba(201, 169, 98, 0.15);
+            background: white;
+        }
+
+        .save-btn {
+            width: 100%;
+            background: var(--gold);
+            color: var(--charcoal);
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .save-btn:hover {
+            background: var(--charcoal);
+            color: var(--gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .upload-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .generate-section {
+                grid-column: span 2;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            header {
+                padding: 1rem 1.5rem;
+            }
+
+            .logo-text {
+                font-size: 1.4rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .upload-row {
+                grid-template-columns: 1fr;
+            }
+
+            .generate-section {
+                grid-column: span 1;
+            }
+
+            main {
+                padding: 100px 1rem 3rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">
+                <i data-lucide="sparkles" style="width:24px;height:24px;color:#C9A962"></i>
+            </div>
+            <div class="logo-text">Bridal <span>AI</span> Studio</div>
+        </div>
+        <div class="header-actions">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span class="status-text">Sistem Aktif</span>
+            </div>
+            <button class="settings-btn" id="openSettings">
+                <i data-lucide="settings" style="width:22px;height:22px"></i>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <div class="hero-section">
+            <h1 class="hero-title">Gelinlik Sanal Deneme</h1>
+            <p class="hero-subtitle">Yapay zeka ile profesyonel gelinlik görselleri oluşturun</p>
+        </div>
+
+        <div class="sections-container">
+            <!-- Section 1: Front Full Body -->
+            <div class="section-card" id="section1">
+                <div class="section-header">
+                    <div class="section-number">1</div>
+                    <div class="section-info">
+                        <h3>Ön Boydan Gelinlik</h3>
+                        <p>Tam boy önden görünüm - Sonsuz stüdyo arka planı</p>
+                    </div>
+                </div>
+                <div class="upload-row">
+                    <div class="upload-box">
+                        <div class="upload-label">
+                            <i data-lucide="shirt" style="width:18px;height:18px"></i>
+                            Gelinlik Görseli
+                        </div>
+                        <div class="drop-zone" id="dress1Zone" data-section="1" data-type="dress">
+                            <input type="file" hidden accept="image/*">
+                            <i data-lucide="image-plus" class="drop-icon"></i>
+                            <div class="drop-text">Gelinlik görselini yükleyin</div>
+                            <img class="preview-image" alt="Preview">
+                            <button class="remove-btn" type="button"><i data-lucide="x"
+                                    style="width:18px;height:18px"></i></button>
+                        </div>
+                    </div>
+                    <div class="upload-box">
+                        <div class="upload-label">
+                            <i data-lucide="user" style="width:18px;height:18px"></i>
+                            Model Görseli
+                        </div>
+                        <div class="drop-zone" id="model1Zone" data-section="1" data-type="model">
+                            <input type="file" hidden accept="image/*">
+                            <i data-lucide="user-plus" class="drop-icon"></i>
+                            <div class="drop-text">Model görselini yükleyin</div>
+                            <img class="preview-image" alt="Preview">
+                            <button class="remove-btn" type="button"><i data-lucide="x"
+                                    style="width:18px;height:18px"></i></button>
+                        </div>
+                    </div>
+                    <div class="generate-section">
+                        <button class="generate-btn" data-section="1" disabled>
+                            <i data-lucide="wand-2" style="width:20px;height:20px"></i>
+                            OLUŞTUR
+                        </button>
+                    </div>
+                </div>
+                <div class="result-container" id="result1">
+                    <div class="result-title">
+                        <i data-lucide="check-circle" style="width:18px;height:18px"></i>
+                        Ön Boydan Görünüm Hazır
+                    </div>
+                    <div class="result-image-wrapper">
+                        <img class="result-image" id="result1Img" alt="Result">
+                        <a class="download-btn" id="download1" download="on_boydan_gelinlik.png">
+                            <i data-lucide="download" style="width:16px;height:16px"></i>
+                            İNDİR
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Back Full Body -->
+            <div class="section-card" id="section2">
+                <div class="section-header">
+                    <div class="section-number">2</div>
+                    <div class="section-info">
+                        <h3>Arka Boydan Gelinlik</h3>
+                        <p>Tam boy arkadan görünüm - Sonsuz stüdyo arka planı</p>
+                    </div>
+                </div>
+                <div class="upload-row">
+                    <div class="upload-box">
+                        <div class="upload-label">
+                            <i data-lucide="shirt" style="width:18px;height:18px"></i>
+                            Gelinlik Görseli
+                        </div>
+                        <div class="drop-zone" id="dress2Zone" data-section="2" data-type="dress">
+                            <input type="file" hidden accept="image/*">
+                            <i data-lucide="image-plus" class="drop-icon"></i>
+                            <div class="drop-text">Gelinlik görselini yükleyin</div>
+                            <img class="preview-image" alt="Preview">
+                            <button class="remove-btn" type="button"><i data-lucide="x"
+                                    style="width:18px;height:18px"></i></button>
+                        </div>
+                    </div>
+                    <div class="upload-box">
+                        <div class="upload-label">
+                            <i data-lucide="user" style="width:18px;height:18px"></i>
+                            Model Görseli
+                        </div>
+                        <div class="drop-zone" id="model2Zone" data-section="2" data-type="model">
+                            <input type="file" hidden accept="image/*">
+                            <i data-lucide="user-plus" class="drop-icon"></i>
+                            <div class="drop-text">Model görselini yükleyin</div>
+                            <img class="preview-image" alt="Preview">
+                            <button class="remove-btn" type="button"><i data-lucide="x"
+                                    style="width:18px;height:18px"></i></button>
+                        </div>
+                    </div>
+                    <div class="generate-section">
+                        <button class="generate-btn" data-section="2" disabled>
+                            <i data-lucide="wand-2" style="width:20px;height:20px"></i>
+                            OLUŞTUR
+                        </button>
+                    </div>
+                </div>
+                <div class="result-container" id="result2">
+                    <div class="result-title">
+                        <i data-lucide="check-circle" style="width:18px;height:18px"></i>
+                        Arka Boydan Görünüm Hazır
+                    </div>
+                    <div class="result-image-wrapper">
+                        <img class="result-image" id="result2Img" alt="Result">
+                        <a class="download-btn" id="download2" download="arka_boydan_gelinlik.png">
+                            <i data-lucide="download" style="width:16px;height:16px"></i>
+                            İNDİR
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Front Waistline Close-up -->
+            <div class="section-card" id="section3">
+                <div class="section-header">
+                    <div class="section-number">3</div>
+                    <div class="section-info">
+                        <h3>Ön Yakın Plan</h3>
+                        <p>Bel hizası yakın çekim - Sonsuz stüdyo arka planı</p>
+                    </div>
+                </div>
+                <div class="upload-row">
+                    <div class="upload-box">
+                        <div class="upload-label">
+                            <i data-lucide="shirt" style="width:18px;height:18px"></i>
+                            Gelinlik Görseli
+                        </div>
+                        <div class="drop-zone" id="dress3Zone" data-section="3" data-type="dress">
+                            <input type="file" hidden accept="image/*">
+                            <i data-lucide="image-plus" class="drop-icon"></i>
+                            <div class="drop-text">Gelinlik görselini yükleyin</div>
+                            <img class="preview-image" alt="Preview">
+                            <button class="remove-btn" type="button"><i data-lucide="x"
+                                    style="width:18px;height:18px"></i></button>
+                        </div>
+                    </div>
+                    <div class="upload-box">
+                        <div class="upload-label">
+                            <i data-lucide="user" style="width:18px;height:18px"></i>
+                            Model Görseli
+                        </div>
+                        <div class="drop-zone" id="model3Zone" data-section="3" data-type="model">
+                            <input type="file" hidden accept="image/*">
+                            <i data-lucide="user-plus" class="drop-icon"></i>
+                            <div class="drop-text">Model görselini yükleyin</div>
+                            <img class="preview-image" alt="Preview">
+                            <button class="remove-btn" type="button"><i data-lucide="x"
+                                    style="width:18px;height:18px"></i></button>
+                        </div>
+                    </div>
+                    <div class="generate-section">
+                        <button class="generate-btn" data-section="3" disabled>
+                            <i data-lucide="wand-2" style="width:20px;height:20px"></i>
+                            OLUŞTUR
+                        </button>
+                    </div>
+                </div>
+                <div class="result-container" id="result3">
+                    <div class="result-title">
+                        <i data-lucide="check-circle" style="width:18px;height:18px"></i>
+                        Ön Yakın Plan Hazır
+                    </div>
+                    <div class="result-image-wrapper">
+                        <img class="result-image" id="result3Img" alt="Result">
+                        <a class="download-btn" id="download3" download="on_yakin_plan_gelinlik.png">
+                            <i data-lucide="download" style="width:16px;height:16px"></i>
+                            İNDİR
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Ayarlar</h2>
+                <button class="settings-btn" id="closeSettings">
+                    <i data-lucide="x" style="width:24px;height:24px"></i>
+                </button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">n8n Webhook URL</label>
+                <input type="text" class="form-input" id="webhookInput"
+                    placeholder="https://your-n8n.com/webhook/gelinlik">
+                <p style="font-size:0.75rem;color:var(--soft-gray);margin-top:0.5rem;">
+                    n8n workflow webhook URL'sini buraya girin.
+                </p>
+            </div>
+            <button class="save-btn" id="saveSettings">KAYDET</button>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Yapay Zeka Çalışıyor</div>
+        <div class="loading-subtext">Görseliniz hazırlanıyor (30-60 saniye)...</div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // State management
+        const state = {
+            sections: {
+                1: { dress: null, model: null },
+                2: { dress: null, model: null },
+                3: { dress: null, model: null }
+            },
+            webhook: localStorage.getItem('bridal_webhook') || 'https://n8n.polmarkai.pro/webhook/gelinlik'
+        };
+
+        // Initialize webhook input
+        document.getElementById('webhookInput').value = state.webhook;
+
+        // Setup all drop zones
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+            const input = zone.querySelector('input[type="file"]');
+            const section = zone.dataset.section;
+            const type = zone.dataset.type;
+
+            zone.addEventListener('click', (e) => {
+                if (!e.target.closest('.remove-btn')) input.click();
+            });
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+
+            zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0], section, type, zone);
+            });
+
+            input.addEventListener('change', (e) => {
+                if (e.target.files[0]) handleFile(e.target.files[0], section, type, zone);
+            });
+
+            zone.querySelector('.remove-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                clearImage(section, type, zone);
+            });
+        });
+
+        function handleFile(file, section, type, zone) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state.sections[section][type] = e.target.result;
+                zone.querySelector('.preview-image').src = e.target.result;
+                zone.classList.add('has-image');
+                updateButton(section);
+                lucide.createIcons();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearImage(section, type, zone) {
+            state.sections[section][type] = null;
+            zone.querySelector('.preview-image').src = '';
+            zone.querySelector('input').value = '';
+            zone.classList.remove('has-image');
+            updateButton(section);
+        }
+
+        function updateButton(section) {
+            const btn = document.querySelector(`.generate-btn[data-section="${section}"]`);
+            const { dress, model } = state.sections[section];
+            btn.disabled = !(dress && model);
+        }
+
+        // Generate buttons
+        document.querySelectorAll('.generate-btn').forEach(btn => {
+            btn.addEventListener('click', () => generateImage(btn.dataset.section));
+        });
+
+        async function generateImage(section) {
+            const { dress, model } = state.sections[section];
+            if (!dress || !model) return;
+
+            const loading = document.getElementById('loadingOverlay');
+            loading.classList.add('active');
+
+            try {
+                const response = await fetch(state.webhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        request_id: `section${section}_${Date.now()}`,
+                        dress_image: dress,
+                        model_image: model,
+                        view_type: section === '1' ? 'front_full' : section === '2' ? 'back_full' : 'front_waist'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && (data.image_1 || data.output)) {
+                    const imageUrl = data.image_1 || data.output;
+                    document.getElementById(`result${section}Img`).src = imageUrl;
+                    document.getElementById(`download${section}`).href = imageUrl;
+                    document.getElementById(`result${section}`).classList.add('visible');
+
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#C9A962', '#E8D5A3', '#FFFFFF']
+                    });
+                } else {
+                    alert('Görsel oluşturulamadı: ' + (data.error || 'Bilinmeyen hata'));
+                }
+            } catch (err) {
+                alert('Bağlantı hatası: ' + err.message);
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Settings Modal
+        document.getElementById('openSettings').addEventListener('click', () => {
+            document.getElementById('modalOverlay').classList.add('active');
+        });
+
+        document.getElementById('closeSettings').addEventListener('click', () => {
+            document.getElementById('modalOverlay').classList.remove('active');
+        });
+
+        document.getElementById('modalOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) e.currentTarget.classList.remove('active');
+        });
+
+        document.getElementById('saveSettings').addEventListener('click', () => {
+            state.webhook = document.getElementById('webhookInput').value;
+            localStorage.setItem('bridal_webhook', state.webhook);
+            document.getElementById('modalOverlay').classList.remove('active');
+        });
+
+        // Entrance animations
+        gsap.from('header', { y: -100, opacity: 0, duration: 0.8, ease: 'power3.out' });
+        gsap.from('.hero-section', { y: 30, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('.section-card', { y: 40, opacity: 0, duration: 0.6, stagger: 0.15, delay: 0.4, ease: 'power3.out' });
+    </script>
+</body>
+
+</html>
