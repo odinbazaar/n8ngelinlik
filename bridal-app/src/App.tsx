@@ -3,11 +3,18 @@ import Header from './components/Header';
 import UploadCard from './components/UploadCard';
 import ResultGallery from './components/ResultGallery';
 import SettingsModal from './components/SettingsModal';
-import { Shirt, User, MapPin, Wand2, Loader2 } from 'lucide-react';
+import { Shirt, User, MapPin, Wand2, Loader2, LogOut } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { supabase } from './lib/supabase';
+import Login from './components/Login';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 const App: React.FC = () => {
-  // State
+  // Auth State
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // App State
   const [dressImage, setDressImage] = useState<string | null>(null);
   const [modelImage, setModelImage] = useState<string | null>(null);
   const [bgImage, setBgImage] = useState<string | null>(null);
@@ -21,12 +28,30 @@ const App: React.FC = () => {
     image_2: null
   });
 
-  // Effects
+  // Auth Effect
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Webhook Persist Effect
   useEffect(() => {
     localStorage.setItem('bridal_webhook_url', webhookUrl);
   }, [webhookUrl]);
 
   // Handlers
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   const handleGenerate = async () => {
     if (!dressImage || !modelImage) return;
 
@@ -69,7 +94,6 @@ const App: React.FC = () => {
           colors: ['#C9A962', '#E8D5A3', '#FFFFFF']
         });
 
-        // Smooth scroll to results
         setTimeout(() => {
           document.querySelector('.results-container')?.scrollIntoView({ behavior: 'smooth' });
         }, 500);
@@ -84,11 +108,33 @@ const App: React.FC = () => {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cream">
+        <Loader2 className="animate-spin text-gold w-12 h-12" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
   const isFormValid = dressImage && modelImage;
 
   return (
     <div className="app-container">
       <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+
+      <div className="fixed bottom-8 left-8 z-[100]">
+        <button
+          onClick={handleLogout}
+          className="p-4 bg-white/80 backdrop-blur-md border border-gold/20 rounded-full text-soft-gray hover:text-red-500 hover:border-red-500/30 transition-all shadow-lg group"
+          title="Çıkış Yap"
+        >
+          <LogOut size={24} />
+        </button>
+      </div>
 
       <main className="main-content">
         <section className="hero-section fade-in">
