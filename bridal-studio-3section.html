@@ -914,7 +914,7 @@
                 2: { dress: null, model: null },
                 3: { dress: null, model: null }
             },
-            webhook: localStorage.getItem('bridal_webhook') || 'https://n8n.polmarkai.pro/webhook/gelinlik'
+            webhook: 'https://n8n.polmarkai.pro/webhook/bridal-tryon'
         };
 
         // Initialize webhook input
@@ -1046,10 +1046,34 @@
             document.getElementById('modalOverlay').classList.remove('active');
         });
 
-        // Entrance animations
-        gsap.from('header', { y: -100, opacity: 0, duration: 0.8, ease: 'power3.out' });
-        gsap.from('.hero-section', { y: 30, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
-        gsap.from('.section-card', { y: 40, opacity: 0, duration: 0.6, stagger: 0.15, delay: 0.4, ease: 'power3.out' });
+        // Entrance animations with safety check
+        window.addEventListener('load', () => {
+            gsap.set('.section-card', { opacity: 0, y: 40 });
+            gsap.from('header', { y: -100, opacity: 0, duration: 0.8, ease: 'power3.out' });
+            gsap.from('.hero-section', { y: 30, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+            gsap.to('.section-card', {
+                y: 0,
+                opacity: 1,
+                duration: 0.6,
+                stagger: 0.15,
+                delay: 0.4,
+                ease: 'power3.out',
+                onComplete: () => {
+                    // Force final visibility
+                    document.querySelectorAll('.section-card').forEach(el => el.style.opacity = '1');
+                }
+            });
+        });
+
+        // Backup safety: show cards after 2 seconds if animation fails
+        setTimeout(() => {
+            document.querySelectorAll('.section-card').forEach(el => {
+                if (window.getComputedStyle(el).opacity === '0') {
+                    el.style.opacity = '1';
+                    el.style.transform = 'none';
+                }
+            });
+        }, 2000);
     </script>
 </body>
 
