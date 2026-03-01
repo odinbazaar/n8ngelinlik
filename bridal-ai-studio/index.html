@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bridal AI Studio - Virtual Try-On</title>
+    <meta name="description"
+        content="Yapay zeka ile profesyonel gelinlik görselleri oluşturun. Virtual Try-On teknolojisi.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C9A962;
+            --gold-light: #E8D5A3;
+            --gold-dark: #A68A4B;
+            --cream: #FBF9F4;
+            --cream-dark: #F5F0E6;
+            --charcoal: #1A1A1A;
+            --charcoal-light: #2C2C2C;
+            --soft-gray: #8A8A8A;
+            --white: #FFFFFF;
+            --success: #4CAF50;
+            --error: #E74C3C;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 8px 30px rgba(201, 169, 98, 0.12);
+            --shadow-lg: 0 20px 60px rgba(201, 169, 98, 0.18);
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--cream);
+            min-height: 100vh;
+            color: var(--charcoal);
+            line-height: 1.6;
+        }
+
+        /* Elegant Header */
+        header {
+            background: linear-gradient(135deg, var(--charcoal) 0%, var(--charcoal-light) 100%);
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(201, 169, 98, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--charcoal);
+        }
+
+        .logo-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            font-weight: 300;
+            color: var(--gold);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(201, 169, 98, 0.08);
+            border: 1px solid rgba(201, 169, 98, 0.3);
+            border-radius: 50px;
+            transition: var(--transition);
+        }
+
+        .status-badge:hover {
+            background: rgba(201, 169, 98, 0.15);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(0.95);
+            }
+        }
+
+        .status-text {
+            font-size: 0.75rem;
+            color: var(--gold-light);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        /* Main Container */
+        main {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 3rem 2rem 5rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(201, 169, 98, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .hero h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 400;
+            color: var(--charcoal);
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        .hero p {
+            color: var(--soft-gray);
+            font-size: 1rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Upload Grid */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .upload-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s ease;
+        }
+
+        .upload-card:hover::before,
+        .upload-card.has-file::before {
+            transform: scaleX(1);
+        }
+
+        .upload-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--charcoal);
+            box-shadow: 0 4px 12px rgba(201, 169, 98, 0.3);
+        }
+
+        .card-info h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: var(--charcoal);
+            margin-bottom: 2px;
+        }
+
+        .card-info p {
+            font-size: 0.8rem;
+            color: var(--soft-gray);
+            letter-spacing: 0.5px;
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed rgba(201, 169, 98, 0.4);
+            border-radius: var(--radius-md);
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(251, 249, 244, 0.5) 0%, rgba(232, 213, 163, 0.05) 100%);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--gold);
+            background: linear-gradient(135deg, rgba(201, 169, 98, 0.08) 0%, rgba(232, 213, 163, 0.12) 100%);
+            transform: scale(1.01);
+        }
+
+        .drop-zone input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .drop-icon {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 1.5rem;
+            color: var(--gold);
+            opacity: 0.8;
+        }
+
+        .drop-text {
+            font-size: 1rem;
+            color: var(--charcoal);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .drop-hint {
+            font-size: 0.8rem;
+            color: var(--soft-gray);
+        }
+
+        /* Preview */
+        .preview-container {
+            display: none;
+            position: relative;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .preview-container.active {
+            display: block;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            border-radius: var(--radius-md);
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 36px;
+            height: 36px;
+            background: rgba(26, 26, 26, 0.85);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            backdrop-filter: blur(4px);
+        }
+
+        .remove-btn:hover {
+            background: var(--error);
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        .remove-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: white;
+        }
+
+        /* Generate Section */
+        .generate-section {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, var(--charcoal) 0%, var(--charcoal-light) 100%);
+            color: var(--gold);
+            border: 2px solid var(--gold);
+            padding: 1.25rem 4rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 60px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .generate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(201, 169, 98, 0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .generate-btn:hover::before {
+            left: 100%;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            color: var(--charcoal);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(201, 169, 98, 0.35);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .generate-btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+            background: linear-gradient(135deg, var(--charcoal) 0%, var(--charcoal-light) 100%);
+            color: var(--gold);
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(251, 249, 244, 0.97);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 70px;
+            height: 70px;
+            border: 4px solid rgba(201, 169, 98, 0.2);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 2rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            color: var(--charcoal);
+            margin-bottom: 0.75rem;
+            font-weight: 400;
+        }
+
+        .loading-subtext {
+            font-size: 0.9rem;
+            color: var(--soft-gray);
+            margin-bottom: 2rem;
+        }
+
+        .loading-progress {
+            width: 300px;
+            height: 6px;
+            background: rgba(201, 169, 98, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .loading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 3px;
+            animation: progress 45s ease-out forwards;
+        }
+
+        @keyframes progress {
+            0% {
+                width: 0%;
+            }
+
+            20% {
+                width: 30%;
+            }
+
+            50% {
+                width: 60%;
+            }
+
+            80% {
+                width: 85%;
+            }
+
+            100% {
+                width: 95%;
+            }
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+            margin-top: 4rem;
+        }
+
+        .results-section.active {
+            display: block;
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .results-header h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.2rem;
+            font-weight: 400;
+            color: var(--charcoal);
+            margin-bottom: 0.5rem;
+        }
+
+        .results-header p {
+            color: var(--soft-gray);
+            font-size: 0.9rem;
+        }
+
+        .result-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .result-image {
+            width: 100%;
+            height: auto;
+            max-height: 700px;
+            object-fit: contain;
+            background: var(--cream-dark);
+        }
+
+        .result-info {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(201, 169, 98, 0.1);
+        }
+
+        .result-label {
+            font-size: 0.85rem;
+            color: var(--soft-gray);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            color: var(--charcoal);
+            border: none;
+            padding: 12px 28px;
+            border-radius: 30px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+        }
+
+        .download-btn:hover {
+            background: var(--charcoal);
+            color: var(--gold);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Error Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--charcoal);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--error);
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        /* API Key Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1500;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 3rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            animation: modalSlide 0.4s ease;
+        }
+
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            color: var(--charcoal);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .modal-description {
+            color: var(--soft-gray);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            line-height: 1.7;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 2px solid rgba(201, 169, 98, 0.3);
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 4px rgba(201, 169, 98, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-btn.primary {
+            background: var(--gold);
+            border: none;
+            color: var(--charcoal);
+        }
+
+        .modal-btn.primary:hover {
+            background: var(--gold-dark);
+            transform: translateY(-2px);
+        }
+
+        .modal-btn.secondary {
+            background: transparent;
+            border: 2px solid var(--soft-gray);
+            color: var(--charcoal);
+        }
+
+        .modal-btn.secondary:hover {
+            border-color: var(--charcoal);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            main {
+                padding: 2rem 1rem;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+
+            .generate-btn {
+                padding: 1rem 2.5rem;
+                font-size: 0.85rem;
+            }
+
+            .modal-content {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon">B</div>
+            <div class="logo-text"><span>Bridal</span> AI Studio</div>
+        </div>
+        <div class="status-badge" id="statusBadge">
+            <div class="status-dot"></div>
+            <span class="status-text">AI Aktif</span>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Gelinlik <span>Virtual Try-On</span></h1>
+            <p>Yapay zeka ile gelinliği model üzerinde görselleştirin</p>
+        </section>
+
+        <!-- Upload Section -->
+        <div class="upload-grid">
+            <!-- Dress Upload -->
+            <div class="upload-card" id="dressCard">
+                <div class="card-header">
+                    <div class="card-number">1</div>
+                    <div class="card-info">
+                        <h3>Gelinlik Görseli</h3>
+                        <p>Manken veya askılık üzerinde gelinlik</p>
+                    </div>
+                </div>
+                <div class="drop-zone" id="dressDropZone">
+                    <input type="file" accept="image/*" id="dressInput">
+                    <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+                        <rect x="3" y="3" width="18" height="18" rx="3" />
+                    </svg>
+                    <div class="drop-text">Görseli sürükleyin veya tıklayın</div>
+                    <div class="drop-hint">PNG, JPG • Maks. 10MB</div>
+                </div>
+                <div class="preview-container" id="dressPreview">
+                    <img class="preview-image" id="dressPreviewImg" alt="Gelinlik önizleme">
+                    <button class="remove-btn" onclick="removeImage('dress')" aria-label="Görseli kaldır">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Model Upload -->
+            <div class="upload-card" id="modelCard">
+                <div class="card-header">
+                    <div class="card-number">2</div>
+                    <div class="card-info">
+                        <h3>Model Fotoğrafı</h3>
+                        <p>Tam boy canlı model fotoğrafı</p>
+                    </div>
+                </div>
+                <div class="drop-zone" id="modelDropZone">
+                    <input type="file" accept="image/*" id="modelInput">
+                    <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M4 20c0-4 4-7 8-7s8 3 8 7" />
+                    </svg>
+                    <div class="drop-text">Görseli sürükleyin veya tıklayın</div>
+                    <div class="drop-hint">PNG, JPG • Maks. 10MB</div>
+                </div>
+                <div class="preview-container" id="modelPreview">
+                    <img class="preview-image" id="modelPreviewImg" alt="Model önizleme">
+                    <button class="remove-btn" onclick="removeImage('model')" aria-label="Görseli kaldır">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="generate-section">
+            <button class="generate-btn" id="generateBtn" disabled>
+                ✨ Görsel Oluştur
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <section class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>Oluşturulan Görsel</h2>
+                <p>AI tarafından oluşturulan virtual try-on sonucu</p>
+            </div>
+            <div class="result-card">
+                <img class="result-image" id="resultImg" src="" alt="AI tarafından oluşturulan görsel">
+                <div class="result-info">
+                    <span class="result-label">Virtual Try-On Sonucu</span>
+                    <button class="download-btn" onclick="downloadImage()">İndir</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Görsel Oluşturuluyor</div>
+            <div class="loading-subtext" id="loadingStatus">AI modeli çalışıyor...</div>
+            <div class="loading-progress">
+                <div class="loading-progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div class="modal" id="apiKeyModal">
+        <div class="modal-content">
+            <h3 class="modal-title">🔑 Replicate API Key</h3>
+            <p class="modal-description">
+                Virtual Try-On için Replicate API anahtarı gereklidir.
+                <a href="https://replicate.com/account/api-tokens" target="_blank"
+                    style="color: var(--gold);">Replicate.com</a>'dan
+                ücretsiz hesap oluşturup API anahtarınızı alabilirsiniz.
+            </p>
+            <input type="password" class="modal-input" id="apiKeyInput" placeholder="r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeApiModal()">İptal</button>
+                <button class="modal-btn primary" onclick="saveApiKey()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        // ============================================
+        // BRIDAL AI STUDIO - DIRECT API INTEGRATION
+        // ============================================
+
+        // State Management
+        const state = {
+            dress: null,
+            model: null,
+            apiKey: localStorage.getItem('replicate_api_key') || ''
+        };
+
+        // DOM Elements
+        const elements = {
+            dressInput: document.getElementById('dressInput'),
+            modelInput: document.getElementById('modelInput'),
+            dressDropZone: document.getElementById('dressDropZone'),
+            modelDropZone: document.getElementById('modelDropZone'),
+            dressPreview: document.getElementById('dressPreview'),
+            modelPreview: document.getElementById('modelPreview'),
+            dressPreviewImg: document.getElementById('dressPreviewImg'),
+            modelPreviewImg: document.getElementById('modelPreviewImg'),
+            dressCard: document.getElementById('dressCard'),
+            modelCard: document.getElementById('modelCard'),
+            generateBtn: document.getElementById('generateBtn'),
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            loadingStatus: document.getElementById('loadingStatus'),
+            resultsSection: document.getElementById('resultsSection'),
+            resultImg: document.getElementById('resultImg'),
+            apiKeyModal: document.getElementById('apiKeyModal'),
+            apiKeyInput: document.getElementById('apiKeyInput'),
+            toast: document.getElementById('toast'),
+            toastMessage: document.getElementById('toastMessage'),
+            progressBar: document.getElementById('progressBar')
+        };
+
+        // ============================================
+        // FILE UPLOAD HANDLERS
+        // ============================================
+
+        function setupUpload(type) {
+            const input = elements[`${type}Input`];
+            const dropZone = elements[`${type}DropZone`];
+
+            input.addEventListener('change', (e) => {
+                if (e.target.files[0]) handleFile(type, e.target.files[0]);
+            });
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    handleFile(type, file);
+                }
+            });
+        }
+
+        function handleFile(type, file) {
+            if (!file || file.size > 10 * 1024 * 1024) {
+                showToast('Dosya çok büyük (maks. 10MB)', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state[type] = {
+                    file: file,
+                    base64: e.target.result
+                };
+
+                elements[`${type}DropZone`].style.display = 'none';
+                elements[`${type}Preview`].classList.add('active');
+                elements[`${type}PreviewImg`].src = e.target.result;
+                elements[`${type}Card`].classList.add('has-file');
+
+                updateGenerateButton();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage(type) {
+            state[type] = null;
+            elements[`${type}DropZone`].style.display = 'flex';
+            elements[`${type}Preview`].classList.remove('active');
+            elements[`${type}Card`].classList.remove('has-file');
+            elements[`${type}Input`].value = '';
+            updateGenerateButton();
+        }
+
+        function updateGenerateButton() {
+            elements.generateBtn.disabled = !(state.dress && state.model);
+        }
+
+        // ============================================
+        // API KEY MANAGEMENT
+        // ============================================
+
+        function showApiModal() {
+            elements.apiKeyInput.value = state.apiKey;
+            elements.apiKeyModal.classList.add('active');
+        }
+
+        function closeApiModal() {
+            elements.apiKeyModal.classList.remove('active');
+        }
+
+        function saveApiKey() {
+            const key = elements.apiKeyInput.value.trim();
+            if (!key || !key.startsWith('r8_')) {
+                showToast('Geçersiz API key formatı', 'error');
+                return;
+            }
+            state.apiKey = key;
+            localStorage.setItem('replicate_api_key', key);
+            closeApiModal();
+            showToast('API Key kaydedildi', 'success');
+        }
+
+        // ============================================
+        // IMAGE UPLOAD TO IMGBB
+        // ============================================
+
+        async function uploadToImgbb(base64Data) {
+            const IMGBB_API_KEY = 'a2aef6faede31afd94e62d43222d2b2b'; // Free API key
+
+            // Remove data URL prefix if present
+            const cleanBase64 = base64Data.includes(',')
+                ? base64Data.split(',')[1]
+                : base64Data;
+
+            const formData = new FormData();
+            formData.append('image', cleanBase64);
+
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Görsel yükleme başarısız');
+            }
+
+            const data = await response.json();
+            return data.data.url;
+        }
+
+        // ============================================
+        // REPLICATE API - VIRTUAL TRY-ON
+        // ============================================
+
+        async function createPrediction(dressUrl, modelUrl) {
+            const response = await fetch('https://api.replicate.com/v1/predictions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${state.apiKey}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'wait'
+                },
+                body: JSON.stringify({
+                    version: '0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985',
+                    input: {
+                        human_img: modelUrl,
+                        garm_img: dressUrl,
+                        garment_des: 'elegant white wedding dress, bridal gown with intricate lace details',
+                        category: 'dresses',
+                        is_checked: false,
+                        is_checked_crop: false,
+                        denoise_steps: 40,
+                        seed: 42
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Replicate API hatası');
+            }
+
+            return await response.json();
+        }
+
+        async function pollPrediction(predictionUrl) {
+            const maxAttempts = 60; // 5 minutes max
+            let attempts = 0;
+
+            while (attempts < maxAttempts) {
+                const response = await fetch(predictionUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${state.apiKey}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Sonuç kontrol hatası');
+                }
+
+                const prediction = await response.json();
+
+                if (prediction.status === 'succeeded') {
+                    return prediction.output;
+                } else if (prediction.status === 'failed') {
+                    throw new Error(prediction.error || 'AI işlemi başarısız');
+                }
+
+                // Update status
+                elements.loadingStatus.textContent = `İşleniyor... (${Math.round((attempts / maxAttempts) * 100)}%)`;
+
+                // Wait 5 seconds before next poll
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                attempts++;
+            }
+
+            throw new Error('İşlem zaman aşımına uğradı');
+        }
+
+        // ============================================
+        // MAIN GENERATION FLOW
+        // ============================================
+
+        async function generate() {
+            // Check API key
+            if (!state.apiKey) {
+                showApiModal();
+                return;
+            }
+
+            // Show loading
+            elements.loadingOverlay.classList.add('active');
+            elements.loadingStatus.textContent = 'Görseller hazırlanıyor...';
+            elements.progressBar.style.animation = 'none';
+            elements.progressBar.offsetHeight; // Trigger reflow
+            elements.progressBar.style.animation = 'progress 60s ease-out forwards';
+
+            try {
+                // Step 1: Upload images to imgbb
+                elements.loadingStatus.textContent = 'Görseller yükleniyor...';
+
+                const [dressUrl, modelUrl] = await Promise.all([
+                    uploadToImgbb(state.dress.base64),
+                    uploadToImgbb(state.model.base64)
+                ]);
+
+                console.log('Uploaded:', { dressUrl, modelUrl });
+
+                // Step 2: Create prediction
+                elements.loadingStatus.textContent = 'AI modeli başlatılıyor...';
+                const prediction = await createPrediction(dressUrl, modelUrl);
+
+                console.log('Prediction created:', prediction);
+
+                // Step 3: Wait for result
+                let output;
+                if (prediction.status === 'succeeded') {
+                    output = prediction.output;
+                } else {
+                    elements.loadingStatus.textContent = 'Virtual Try-On işleniyor...';
+                    output = await pollPrediction(prediction.urls.get);
+                }
+
+                // Step 4: Show result
+                const resultUrl = Array.isArray(output) ? output[0] : output;
+                elements.resultImg.src = resultUrl;
+                elements.resultsSection.classList.add('active');
+
+                // Scroll to results
+                setTimeout(() => {
+                    elements.resultsSection.scrollIntoView({ behavior: 'smooth' });
+                }, 300);
+
+                showToast('Görsel başarıyla oluşturuldu!', 'success');
+
+            } catch (error) {
+                console.error('Generation error:', error);
+
+                if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                    showToast('API key geçersiz veya süresi dolmuş', 'error');
+                    showApiModal();
+                } else {
+                    showToast(error.message || 'Bir hata oluştu', 'error');
+                }
+            } finally {
+                elements.loadingOverlay.classList.remove('active');
+            }
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function downloadImage() {
+            const img = elements.resultImg;
+            if (!img.src) return;
+
+            fetch(img.src)
+                .then(res => res.blob())
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `bridal-tryon-${Date.now()}.png`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                })
+                .catch(() => {
+                    // Fallback: open in new tab
+                    window.open(img.src, '_blank');
+                });
+        }
+
+        function showToast(message, type = 'error') {
+            elements.toastMessage.textContent = message;
+            elements.toast.className = `toast ${type} show`;
+
+            setTimeout(() => {
+                elements.toast.classList.remove('show');
+            }, 4000);
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        function init() {
+            // Setup file uploads
+            setupUpload('dress');
+            setupUpload('model');
+
+            // Generate button
+            elements.generateBtn.addEventListener('click', generate);
+
+            // Check for saved API key
+            if (!state.apiKey) {
+                setTimeout(() => {
+                    showToast('Lütfen Replicate API key\'inizi girin', 'error');
+                    showApiModal();
+                }, 1000);
+            }
+
+            // API key modal - close on outside click
+            elements.apiKeyModal.addEventListener('click', (e) => {
+                if (e.target === elements.apiKeyModal) {
+                    closeApiModal();
+                }
+            });
+
+            // Enter key on API input
+            elements.apiKeyInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') saveApiKey();
+            });
+
+            console.log('🎀 Bridal AI Studio initialized');
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+
+</html>

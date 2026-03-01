@@ -29,6 +29,39 @@
             --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        body.dark-mode {
+            --cream: #121212;
+            --charcoal: #FBF9F4;
+            --soft-gray: #B0B0B0;
+            --white: #1E1E1E;
+            --shadow: rgba(0, 0, 0, 0.5);
+            --glass: rgba(30, 30, 30, 0.9);
+            --glass-border: rgba(201, 169, 98, 0.15);
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(201, 169, 98, 0.05) 0%, transparent 25%),
+                radial-gradient(circle at 90% 80%, rgba(201, 169, 98, 0.05) 0%, transparent 25%),
+                radial-gradient(circle at 50% 50%, rgba(201, 169, 98, 0.02) 0%, transparent 50%);
+        }
+
+        body.dark-mode .upload-box {
+            background: rgba(44, 44, 44, 0.7);
+        }
+
+        body.dark-mode .form-input {
+            background: #2C2C2C;
+            color: #FBF9F4;
+        }
+
+        body.dark-mode .hero-title {
+            background: linear-gradient(135deg, var(--charcoal) 0%, var(--gold-light) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        body.dark-mode .drop-zone {
+            border-color: #3C3C3C;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -45,6 +78,7 @@
                 radial-gradient(circle at 10% 20%, rgba(201, 169, 98, 0.08) 0%, transparent 25%),
                 radial-gradient(circle at 90% 80%, rgba(201, 169, 98, 0.08) 0%, transparent 25%),
                 radial-gradient(circle at 50% 50%, rgba(201, 169, 98, 0.03) 0%, transparent 50%);
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
 
         h1,
@@ -677,6 +711,9 @@
             <div class="logo-text">Bridal <span>AI</span> Studio</div>
         </div>
         <div class="header-actions">
+            <button class="settings-btn" id="themeToggle" title="Gece/Gündüz Modu">
+                <i data-lucide="moon" id="themeIcon" style="width:22px;height:22px"></i>
+            </button>
             <div class="status-badge">
                 <div class="status-dot"></div>
                 <span class="status-text">Sistem Aktif</span>
@@ -886,11 +923,13 @@
                 </button>
             </div>
             <div class="form-group">
-                <label class="form-label">n8n Webhook URL</label>
-                <input type="text" class="form-input" id="webhookInput"
-                    placeholder="https://your-n8n.com/webhook/gelinlik">
+                <label class="form-label">OpenRouter API Key</label>
+                <input type="password" class="form-input" id="apiKeyInput"
+                    placeholder="sk-or-v1-xxxxxxxxxxxxxxxxxxxx">
                 <p style="font-size:0.75rem;color:var(--soft-gray);margin-top:0.5rem;">
-                    n8n workflow webhook URL'sini buraya girin.
+                    <a href="https://openrouter.ai/settings/keys" target="_blank"
+                       style="color:var(--gold);text-decoration:underline;">OpenRouter.ai</a>'dan
+                    ücretsiz hesap oluşturup API anahtarınızı alabilirsiniz.
                 </p>
             </div>
             <button class="save-btn" id="saveSettings">KAYDET</button>
@@ -905,7 +944,39 @@
     </div>
 
     <script>
+        // Init Theme
+        const storedTheme = localStorage.getItem('bridal_theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        let isDarkMode = storedTheme === 'dark' || (!storedTheme && prefersDark);
+        
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+        }
+
         lucide.createIcons();
+
+        // Theme Toggle Logic
+        const themeToggleBtn = document.getElementById('themeToggle');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                isDarkMode = !isDarkMode;
+                if (isDarkMode) {
+                    document.body.classList.add('dark-mode');
+                    localStorage.setItem('bridal_theme', 'dark');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    localStorage.setItem('bridal_theme', 'light');
+                }
+                
+                // Update icon
+                themeToggleBtn.innerHTML = `<i data-lucide="${isDarkMode ? 'sun' : 'moon'}" style="width:22px;height:22px"></i>`;
+                lucide.createIcons();
+            });
+
+            // Set initial icon
+            themeToggleBtn.innerHTML = `<i data-lucide="${isDarkMode ? 'sun' : 'moon'}" style="width:22px;height:22px"></i>`;
+            lucide.createIcons();
+        }
 
         // State management
         const state = {
@@ -914,11 +985,12 @@
                 2: { dress: null, model: null },
                 3: { dress: null, model: null }
             },
-            webhook: 'https://n8n.polmarkai.pro/webhook/bridal-tryon'
+            apiKey: localStorage.getItem('openrouter_api_key') || '',
+            MODEL: 'google/gemini-3-pro-image-preview'
         };
 
-        // Initialize webhook input
-        document.getElementById('webhookInput').value = state.webhook;
+        // Initialize API key input
+        document.getElementById('apiKeyInput').value = state.apiKey;
 
         // Setup all drop zones
         document.querySelectorAll('.drop-zone').forEach(zone => {
@@ -979,6 +1051,84 @@
             btn.disabled = !(dress && model);
         }
 
+        // View type prompt configurations
+        function getPrompt(viewType) {
+            switch (viewType) {
+                case 'front_full':
+                    return 'Transfer this wedding dress onto the model exactly as it is, without changing any details of the dress. Show a full-body front view. The model should be standing in a professional infinite white studio background. Ultra photorealistic, ultra detailed, professional fashion photography.';
+                case 'back_full':
+                    return 'Transfer this wedding dress onto the model exactly as it is, without changing any details of the dress. Show a full-body back view so the train and back details are visible. The model should be standing in a professional infinite white studio background. Ultra photorealistic, ultra detailed, professional fashion photography.';
+                case 'front_waist':
+                    return 'Transfer this wedding dress onto the model exactly as it is, without changing any details of the dress. Show a front waistline close-up view focusing on the bodice, waist beading and lace details. The model should be in a professional infinite white studio background. Ultra photorealistic, ultra detailed, professional fashion photography.';
+                default:
+                    return 'Transfer this wedding dress onto the model. Ultra photorealistic, professional fashion photography.';
+            }
+        }
+
+        // Call OpenRouter API with Nano Banana Pro
+        async function generateWithOpenRouter(dressBase64, modelBase64, viewType) {
+            const prompt = getPrompt(viewType);
+
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${state.apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: state.MODEL,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: [
+                                { type: 'text', text: prompt },
+                                { type: 'image_url', image_url: { url: dressBase64 } },
+                                { type: 'image_url', image_url: { url: modelBase64 } }
+                            ]
+                        }
+                    ],
+                    modalities: ['image', 'text'],
+                    image_config: {
+                        aspect_ratio: '3:4',
+                        image_size: '2K'
+                    }
+                })
+            });
+
+            if (response.status === 401) throw new Error('API key geçersiz veya süresi dolmuş (401)');
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error?.message || `OpenRouter API hatası (${response.status})`);
+            }
+
+            const data = await response.json();
+            const message = data.choices?.[0]?.message;
+
+            // Extract image from response
+            if (message?.images && message.images.length > 0) {
+                return message.images[0].image_url.url;
+            }
+
+            // Some models return inline base64 in content
+            if (typeof message?.content === 'string') {
+                const match = message.content.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+                if (match) return match[0];
+            }
+
+            throw new Error('API yanıtında görsel bulunamadı');
+        }
+
+        // Convert base64 data URL to downloadable blob URL
+        function base64ToBlobUrl(dataUrl) {
+            const [header, base64] = dataUrl.split(',');
+            const mime = header.match(/:(.*?);/)[1];
+            const bytes = atob(base64);
+            const arr = new Uint8Array(bytes.length);
+            for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+            const blob = new Blob([arr], { type: mime });
+            return URL.createObjectURL(blob);
+        }
+
         // Generate buttons
         document.querySelectorAll('.generate-btn').forEach(btn => {
             btn.addEventListener('click', () => generateImage(btn.dataset.section));
@@ -988,44 +1138,72 @@
             const { dress, model } = state.sections[section];
             if (!dress || !model) return;
 
+            if (!state.apiKey) {
+                document.getElementById('modalOverlay').classList.add('active');
+                return;
+            }
+
             const loading = document.getElementById('loadingOverlay');
+            const loadingSubtext = document.querySelector('.loading-subtext');
             loading.classList.add('active');
 
+            const viewType = section === '1' ? 'front_full' : section === '2' ? 'back_full' : 'front_waist';
+
             try {
-                const response = await fetch(state.webhook, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        request_id: `section${section}_${Date.now()}`,
-                        dress_image: dress,
-                        model_image: model,
-                        view_type: section === '1' ? 'front_full' : section === '2' ? 'back_full' : 'front_waist'
-                    })
-                });
+                // Single API call - OpenRouter accepts base64 directly
+                loadingSubtext.textContent = 'AI görsel oluşturuyor...';
+                const resultDataUrl = await generateWithOpenRouter(dress, model, viewType);
 
-                const data = await response.json();
+                // Display result
+                document.getElementById(`result${section}Img`).src = resultDataUrl;
 
-                if (data.success && (data.image_1 || data.output)) {
-                    const imageUrl = data.image_1 || data.output;
-                    document.getElementById(`result${section}Img`).src = imageUrl;
-                    document.getElementById(`download${section}`).href = imageUrl;
-                    document.getElementById(`result${section}`).classList.add('visible');
-
-                    confetti({
-                        particleCount: 100,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#C9A962', '#E8D5A3', '#FFFFFF']
-                    });
+                // Create downloadable blob URL for the download button
+                const downloadLink = document.getElementById(`download${section}`);
+                if (resultDataUrl.startsWith('data:')) {
+                    const blobUrl = base64ToBlobUrl(resultDataUrl);
+                    downloadLink.href = blobUrl;
                 } else {
-                    alert('Görsel oluşturulamadı: ' + (data.error || 'Bilinmeyen hata'));
+                    downloadLink.href = resultDataUrl;
                 }
+
+                document.getElementById(`result${section}`).classList.add('visible');
+
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#C9A962', '#E8D5A3', '#FFFFFF']
+                });
             } catch (err) {
-                alert('Bağlantı hatası: ' + err.message);
+                if (err.message.includes('401')) {
+                    alert('API key geçersiz veya süresi dolmuş. Lütfen ayarlardan yeni key girin.');
+                    document.getElementById('modalOverlay').classList.add('active');
+                } else {
+                    alert('Hata: ' + err.message);
+                }
             } finally {
                 loading.classList.remove('active');
+                loadingSubtext.textContent = 'Görseliniz hazırlanıyor...';
             }
         }
+
+        // Status badge update
+        function updateStatusBadge() {
+            const dot = document.querySelector('.status-dot');
+            const text = document.querySelector('.status-text');
+            if (state.apiKey) {
+                dot.style.background = '#4CAF50';
+                dot.style.boxShadow = '0 0 12px rgba(76, 175, 80, 0.6)';
+                text.textContent = 'API Hazır';
+                text.style.color = '#4CAF50';
+            } else {
+                dot.style.background = '#E74C3C';
+                dot.style.boxShadow = '0 0 12px rgba(231, 76, 60, 0.6)';
+                text.textContent = 'API Key Gerekli';
+                text.style.color = '#E74C3C';
+            }
+        }
+        updateStatusBadge();
 
         // Settings Modal
         document.getElementById('openSettings').addEventListener('click', () => {
@@ -1041,10 +1219,23 @@
         });
 
         document.getElementById('saveSettings').addEventListener('click', () => {
-            state.webhook = document.getElementById('webhookInput').value;
-            localStorage.setItem('bridal_webhook', state.webhook);
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (!key || !key.startsWith('sk-or-')) {
+                alert('Geçersiz API key formatı. Key "sk-or-" ile başlamalıdır.');
+                return;
+            }
+            state.apiKey = key;
+            localStorage.setItem('openrouter_api_key', key);
+            updateStatusBadge();
             document.getElementById('modalOverlay').classList.remove('active');
         });
+
+        // Auto-show settings if no API key
+        if (!state.apiKey) {
+            setTimeout(() => {
+                document.getElementById('modalOverlay').classList.add('active');
+            }, 1500);
+        }
 
         // Entrance animations with safety check
         window.addEventListener('load', () => {
